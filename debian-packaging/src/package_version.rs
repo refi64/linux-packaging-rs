@@ -259,12 +259,14 @@ fn lexical_compare(a: &str, b: &str) -> Ordering {
             (None, Some(_)) => {
                 return Ordering::Less;
             }
-            (Some(a_char), Some(b_char)) => match compare_char(a_char, b_char) {
-                Ordering::Equal => {}
-                res => {
-                    return res;
+            (Some(a_char), Some(b_char)) => {
+                match compare_char(a_char, b_char).then_with(|| a_char.cmp(&b_char)) {
+                    Ordering::Equal => {}
+                    res => {
+                        return res;
+                    }
                 }
-            },
+            }
             (None, None) => {
                 panic!("None, None variant should never happen");
             }
@@ -424,6 +426,8 @@ mod test {
         assert_eq!(lexical_compare("", "~"), Ordering::Greater);
         assert_eq!(lexical_compare("", "a"), Ordering::Less);
         assert_eq!(lexical_compare("a", ""), Ordering::Greater);
+        assert_eq!(lexical_compare("a", "b"), Ordering::Less);
+        assert_eq!(lexical_compare("b", "a"), Ordering::Greater);
 
         // 1.0~beta1~svn1245 sorts earlier than 1.0~beta1, which sorts earlier than 1.0.
     }
@@ -435,6 +439,7 @@ mod test {
             Ordering::Less
         );
         assert_eq!(compare_component("1.0~beta1", "1.0"), Ordering::Less);
+        assert_eq!(compare_component("1.1.1k", "1.1.1n"), Ordering::Less);
     }
 
     #[test]
